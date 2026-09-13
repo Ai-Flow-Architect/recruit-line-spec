@@ -1,0 +1,495 @@
+<title>採用LINEの仕組み ご提案</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap">
+
+<style>
+  /* 3枚共通の見た目。ここが唯一の正本＝ページ側に個別CSSを書かない */
+  :root{
+    --bg:#0A0E16;
+    --panel:#111825;
+    --line:#2A3446;
+    --gold:#D4AF37;
+    --gold-dim:#8C7526;
+    --text:#F2F4F7;
+    --muted:#9AA7B4;
+    --warn:#E0724A;
+    --ok:#5FB894;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:"Noto Sans JP","Hiragino Kaku Gothic ProN",system-ui,sans-serif;
+    font-size:18px;
+    line-height:1.95;
+    padding:clamp(1.5rem,4vw,3.5rem) clamp(1rem,3vw,2rem) clamp(4rem,8vw,7rem);
+    background-image:
+      radial-gradient(1200px 600px at 8% -5%, rgba(212,175,55,.10), transparent 60%),
+      radial-gradient(900px 500px at 100% 105%, rgba(212,175,55,.07), transparent 60%);
+    background-attachment:fixed;
+  }
+  .wrap{max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:clamp(3rem,6vw,5rem);}
+
+  header{display:flex;flex-direction:column;gap:.75rem;padding-bottom:1.75rem;border-bottom:1px solid var(--line);}
+  .eyebrow{font-size:.8rem;font-weight:700;letter-spacing:.24em;color:var(--gold);}
+  h1{font-size:clamp(2.2rem,6vw,3.4rem);font-weight:900;line-height:1.25;margin:0;letter-spacing:.01em;text-wrap:balance;}
+  /* 題名の左に置く印（金の線画・実在の道具ではないのでロゴは使わない） */
+  h1{display:flex;align-items:center;gap:.7rem;}
+  h1 .t-icon{width:1em;height:1em;flex:none;stroke:var(--gold);fill:none;stroke-width:1.7;
+    stroke-linecap:round;stroke-linejoin:round;}
+  .lede{margin:0;color:var(--muted);font-size:clamp(1rem,2.2vw,1.15rem);max-width:44rem;}
+
+  section{display:flex;flex-direction:column;gap:1.4rem;}
+  h2{
+    margin:0;font-size:clamp(1.5rem,3.6vw,2rem);font-weight:700;line-height:1.5;
+    /* 題名が2行になっても番号は1行目の高さに置く（中央寄せだと浮いて見にくい） */
+    display:flex;align-items:flex-start;gap:.9rem;flex-wrap:wrap;
+    text-wrap:balance;line-break:strict;word-break:normal;overflow-wrap:normal;
+  }
+  /* 番号は題名と同じ大きさ・同じ行の高さにする＝ズレる余地をなくす
+     （小さい文字を後から位置合わせすると、行の高さの差だけ必ず浮く） */
+  h2 .step{font-size:inherit;line-height:inherit;margin-top:0;align-self:auto;}
+  /* 題名の中で「ここで折る」と決めた位置。それ以外では折らない */
+  h2 .nb{white-space:nowrap;}
+  /* 章の番号＝枠で囲わず数字そのもので示す（目次の①〜④と同じ見え方に揃える） */
+  .step{
+    font-size:1.5rem;font-weight:700;letter-spacing:0;color:var(--gold);
+    border:none;padding:0;white-space:nowrap;line-height:1;
+  }
+  h3{margin:0;font-size:1.15rem;font-weight:700;letter-spacing:.06em;color:var(--gold);}
+
+  .figure{
+    background:linear-gradient(160deg,#0D131E 0%,#161D2B 100%);
+    border:1px solid var(--line);border-radius:6px;
+    padding:clamp(1rem,2.5vw,2rem);overflow-x:auto;
+  }
+  .svg-holder{width:80%;margin:0 auto;min-width:640px;}
+  @media (max-width:900px){ .svg-holder{width:100%;min-width:600px;} }
+  .figure svg{width:100%;height:auto;display:block;}
+
+  .hint{display:flex;align-items:center;gap:.5rem;color:var(--muted);font-size:.88rem;margin:0 0 .9rem;}
+  .hint svg{width:1.05rem;height:1.05rem;flex:none;}
+
+  .node{cursor:help;}
+  .node rect.box{transition:stroke .15s ease, filter .15s ease;}
+  .node:hover rect.box, .node:focus-visible rect.box{
+    stroke:#F0D77A;filter:drop-shadow(0 0 10px rgba(212,175,55,.45));
+  }
+  .node:focus{outline:none;}
+  .node:focus-visible rect.box{stroke-width:3.5;}
+
+  #tip{
+    position:fixed;z-index:50;max-width:24rem;
+    background:#0B111B;border:1px solid var(--gold-dim);border-radius:4px;
+    padding:.85rem 1rem;font-size:.95rem;line-height:1.8;color:var(--text);
+    box-shadow:0 12px 30px rgba(0,0,0,.6);
+    opacity:0;visibility:hidden;transition:opacity .12s ease;pointer-events:none;
+  }
+  #tip.on{opacity:1;visibility:visible;}
+  #tip .tip-name{display:block;color:var(--gold);font-weight:700;font-size:.85rem;letter-spacing:.08em;margin-bottom:.3rem;}
+
+  .reading{
+    background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--gold);
+    border-radius:3px;padding:1.4rem clamp(1.2rem,3vw,1.8rem);
+    display:flex;flex-direction:column;gap:1rem;
+  }
+  .reading ul{margin:0;padding-left:1.3rem;display:flex;flex-direction:column;gap:.7rem;}
+  .reading li::marker{color:var(--gold);}
+  .reading p{margin:0;}
+  b{font-weight:700;color:#FFFFFF;}
+
+  .caution{border-left-color:var(--warn);}
+  .caution h3{color:var(--warn);}
+  .tag{display:inline-block;background:rgba(224,114,74,.14);color:var(--warn);
+    font-size:.8rem;font-weight:700;padding:.15rem .6rem;border-radius:2px;margin-right:.45rem;}
+
+  /* 目次＝冒頭に置く章の一覧 */
+  .toc{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--gold);
+    border-radius:3px;padding:1.2rem clamp(1.2rem,3vw,1.6rem);
+    display:flex;flex-direction:column;gap:.55rem;}
+  .toc h3{margin-bottom:.5rem;}
+  /* 折り返しても2行目が番号の下へ潜らないよう、本文の左端で揃える */
+  .toc a{display:flex;gap:.7rem;align-items:flex-start;color:var(--text);text-decoration:none;
+    font-size:1rem;line-height:1.8;border-bottom:1px solid transparent;
+    line-break:strict;word-break:normal;overflow-wrap:normal;}
+  .toc a:hover,.toc a:focus-visible{color:var(--gold);border-bottom-color:var(--gold-dim);}
+  .toc .no{color:var(--gold);font-weight:700;flex:none;min-width:1.6em;}
+  .toc .nb{white-space:nowrap;}
+
+  /* 出典＝題名の直下。ラベルと出典を縦に積み、URLの途中では折らない */
+  .src{margin:0;font-size:.9rem;line-height:1.9;color:var(--muted);
+    display:flex;flex-wrap:wrap;gap:.15rem .9rem;align-items:baseline;
+    line-break:strict;word-break:normal;overflow-wrap:normal;}
+  .src .no{color:var(--gold);font-weight:700;flex:none;}
+  .src .lbl{color:var(--text);font-weight:700;white-space:nowrap;}
+  .src a{color:var(--gold);white-space:nowrap;}
+
+  .table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:3px;}
+  table{border-collapse:collapse;width:100%;font-size:1rem;min-width:520px;}
+  th,td{text-align:left;padding:1rem 1.1rem;border-bottom:1px solid var(--line);vertical-align:top;}
+  tr:last-child td{border-bottom:none;}
+  th{text-align:center;font-size:1rem;letter-spacing:.06em;color:var(--gold);font-weight:700;
+    white-space:nowrap;background:rgba(212,175,55,.05);}
+  td{text-align:left;}
+  td:first-child{font-weight:700;white-space:nowrap;color:#FFFFFF;}
+  .num{font-variant-numeric:tabular-nums;white-space:nowrap;}
+  /* 表の中のリンク（別紙へ飛ぶ） */
+  td a{color:var(--gold);text-decoration:none;border-bottom:1px solid var(--gold-dim);}
+  td a:hover,td a:focus-visible{border-bottom-color:var(--gold);}
+  .up{color:var(--ok);font-weight:700;}
+  .down{color:var(--warn);font-weight:700;}
+  .flat{color:var(--muted);}
+
+  footer{border-top:1px solid var(--line);padding-top:1.4rem;color:var(--muted);font-size:.9rem;
+    display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap;}
+  .brand{color:var(--text);font-weight:700;letter-spacing:.12em;}
+
+  @media (prefers-reduced-motion:reduce){*{transition:none !important;}}
+
+  .tree{background:#0B111B;border:1px solid var(--line);border-radius:4px;
+    padding:clamp(1rem,2.5vw,1.6rem);overflow-x:auto;
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    font-size:.92rem;line-height:1.95;color:#C7D0DA;white-space:pre;}
+  .tree b{color:#D4AF37;font-weight:700;}
+  .tree i{color:var(--muted);font-style:normal;}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:1.2rem;}
+  @media (max-width:820px){ .two{grid-template-columns:1fr;} }
+  .two .reading{gap:.7rem;}
+  .win{color:var(--gold);font-weight:700;text-align:center;margin:.2rem 0;}
+  /* 表の中に置く道具の印＝実在する道具は白タイル＋公式ロゴ（手写ししない） */
+  .tlogo{display:inline-flex;align-items:center;justify-content:center;
+    width:1.5em;height:1.5em;border-radius:.28em;background:#EEF2F6;
+    vertical-align:-.38em;margin-right:.45em;flex:none;}
+  .tlogo svg{width:1.05em;height:1.05em;display:block;}
+  /* 道具でないもの（場所・守り・作業）の印＝金の線画。ロゴは使わない */
+  .tline{display:inline-flex;align-items:center;justify-content:center;
+    width:1.5em;height:1.5em;vertical-align:-.38em;margin-right:.45em;flex:none;}
+  .tline svg{width:1.35em;height:1.35em;display:block;stroke:var(--gold);fill:none;
+    stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;}
+</style>
+
+<div id="tip" role="tooltip"></div>
+
+
+<div class="wrap">
+
+  <header>
+    <span class="eyebrow">結婚式場様 アルバイト・パート採用</span>
+    <h1><svg class="t-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v10H10l-5 4v-4H4z"/><path d="M8 9h8"/><path d="M8 12h5"/></svg>採用LINEの仕組み ご提案</h1>
+    <p class="lede">Instagramで知っていただき、LINEで応募から面接の予約まで進んでいただく流れを、<br>この1枚にまとめました。<br><b>ツールの月額は0円から・必要なご招待とご回答がそろってから約2週間・ご満足いただけなければ全額返金</b>です。</p>
+  </header>
+
+  <nav class="toc" aria-label="目次">
+    <h3>目次</h3>
+    <a href="#ch1"><span class="no">&#9312;</span><span>ご依頼内容の理解</span></a>
+    <a href="#ch2"><span class="no">&#9313;</span><span>応募から面接までの流れ</span></a>
+    <a href="#ch3"><span class="no">&#9314;</span><span>今回お作りするもの</span></a>
+    <a href="#ch4"><span class="no">&#9315;</span><span>ツールの月額費用の目安</span></a>
+    <a href="#ch5"><span class="no">&#9316;</span><span>お見積りと進め方</span></a>
+    <a href="#ch6"><span class="no">&#9317;</span><span>ご購入後に確認させていただくこと</span></a>
+  </nav>
+
+  <section id="ch1">
+    <h2><span class="step">&#9312;</span>ご依頼内容の理解</h2>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>項目</th><th>内容</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><span class="tlogo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7.0301.084c-1.2768.0602-2.1487.264-2.911.5634-.7888.3075-1.4575.72-2.1228 1.3877-.6652.6677-1.075 1.3368-1.3802 2.127-.2954.7638-.4956 1.6365-.552 2.914-.0564 1.2775-.0689 1.6882-.0626 4.947.0062 3.2586.0206 3.6671.0825 4.9473.061 1.2765.264 2.1482.5635 2.9107.308.7889.72 1.4573 1.388 2.1228.6679.6655 1.3365 1.0743 2.1285 1.38.7632.295 1.6361.4961 2.9134.552 1.2773.056 1.6884.069 4.9462.0627 3.2578-.0062 3.668-.0207 4.9478-.0814 1.28-.0607 2.147-.2652 2.9098-.5633.7889-.3086 1.4578-.72 2.1228-1.3881.665-.6682 1.0745-1.3378 1.3795-2.1284.2957-.7632.4966-1.636.552-2.9124.056-1.2809.0692-1.6898.063-4.948-.0063-3.2583-.021-3.6668-.0817-4.9465-.0607-1.2797-.264-2.1487-.5633-2.9117-.3084-.7889-.72-1.4568-1.3876-2.1228C21.2982 1.33 20.628.9208 19.8378.6165 19.074.321 18.2017.1197 16.9244.0645 15.6471.0093 15.236-.005 11.977.0014 8.718.0076 8.31.0215 7.0301.0839m.1402 21.6932c-1.17-.0509-1.8053-.2453-2.2287-.408-.5606-.216-.96-.4771-1.3819-.895-.422-.4178-.6811-.8186-.9-1.378-.1644-.4234-.3624-1.058-.4171-2.228-.0595-1.2645-.072-1.6442-.079-4.848-.007-3.2037.0053-3.583.0607-4.848.05-1.169.2456-1.805.408-2.2282.216-.5613.4762-.96.895-1.3816.4188-.4217.8184-.6814 1.3783-.9003.423-.1651 1.0575-.3614 2.227-.4171 1.2655-.06 1.6447-.072 4.848-.079 3.2033-.007 3.5835.005 4.8495.0608 1.169.0508 1.8053.2445 2.228.408.5608.216.96.4754 1.3816.895.4217.4194.6816.8176.9005 1.3787.1653.4217.3617 1.056.4169 2.2263.0602 1.2655.0739 1.645.0796 4.848.0058 3.203-.0055 3.5834-.061 4.848-.051 1.17-.245 1.8055-.408 2.2294-.216.5604-.4763.96-.8954 1.3814-.419.4215-.8181.6811-1.3783.9-.4224.1649-1.0577.3617-2.2262.4174-1.2656.0595-1.6448.072-4.8493.079-3.2045.007-3.5825-.006-4.848-.0608M16.953 5.5864A1.44 1.44 0 1 0 18.39 4.144a1.44 1.44 0 0 0-1.437 1.4424M5.8385 12.012c.0067 3.4032 2.7706 6.1557 6.173 6.1493 3.4026-.0065 6.157-2.7701 6.1506-6.1733-.0065-3.4032-2.771-6.1565-6.174-6.1498-3.403.0067-6.156 2.771-6.1496 6.1738M8 12.0077a4 4 0 1 1 4.008 3.9921A3.9996 3.9996 0 0 1 8 12.0077" fill="#FF0069"/></svg></span>Instagram</td><td>採用専用のアカウントを新しく開設する<br>（範囲は開設と初期設定まで）</td></tr>
+          <tr><td><span class="tlogo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63h2.386c.346 0 .627.285.627.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63.346 0 .628.285.628.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.282.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314" fill="#00C300"/></svg></span>LINEのメニュー</td><td>西松屋様のパート・アルバイト求人LINEを参考に作る</td></tr>
+          <tr><td><span class="tline"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h11v10H4z"/><path d="M15 10l5-3v10l-5-3"/></svg></span>面接</td><td>オンライン面接と録画面接を、LINEから受けられるようにする</td></tr>
+          <tr><td><span class="tline"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4z"/><path d="M10 9l5 3-5 3z"/></svg></span>お仕事紹介の動画</td><td>御社で作成・編集される（当方はLINEとInstagramに載せる場所を用意します）</td></tr>
+          <tr><td><span class="tline"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v18"/><path d="M16 7H10a3 3 0 0 0 0 6h4a3 3 0 0 1 0 6H8"/></svg></span>月額費用</td><td>2〜3万円程度まで</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="ch2">
+    <h2><span class="step">&#9313;</span>応募から面接までの流れ</h2>
+
+    <p class="hint">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#D4AF37" stroke-width="2" aria-hidden="true">
+        <path d="M5 3l10 9-4.5 1.5L13 19l-2.5 1-2.5-5.5L5 18z" stroke-linejoin="round"/>
+      </svg>
+      カードにマウスを合わせる（スマホは指で押す）と、その段階で起きることが出ます。
+    </p>
+
+    <div class="figure">
+    <div class="svg-holder" data-accent="flow">
+      <svg viewBox="0 0 2150 380" role="img" aria-label="採用専用のInstagramからLINEの友だち追加へ進み、メニューで仕事内容を知り、応募フォームで応募し、空いている枠から面接を予約し、オンライン面接または録画面接を受ける、という5段階の流れ。">
+        <defs>
+          <marker id="ag0" markerWidth="12" markerHeight="12" refX="9" refY="4" orient="auto">
+            <path d="M0,0 L9,4 L0,8 Z" fill="#D4AF37"/>
+          </marker>
+        </defs>
+
+        <g class="node" tabindex="0" data-name="Instagram"
+           data-tip="採用専用のアカウントです。プロフィールとハイライトで職場の雰囲気を伝え、プロフィールのリンクからLINEの友だち追加へ進んでいただきます。">
+          <rect class="box" x="40" y="60" width="380" height="250" rx="8" fill="#1B2333" stroke="#D4AF37" stroke-width="2"/>
+          <text x="70" y="118" fill="#D4AF37" font-size="26" font-weight="700">Instagram</text>
+          <text x="70" y="176" fill="#F2F4F7" font-size="24">・採用専用アカウント</text>
+          <text x="70" y="220" fill="#F2F4F7" font-size="24">・LINEへのリンク</text>
+        </g>
+
+        <line class="flow-arrow" x1="428" y1="185" x2="452" y2="185" stroke="#D4AF37" stroke-width="2.5" marker-end="url(#ag0)"/>
+
+        <g class="node" tabindex="0" data-name="LINE 友だち追加"
+           data-tip="友だち追加すると、画面の下にメニューが出ます。お仕事紹介の動画・募集要項・よくある質問を見て、そのまま応募へ進めます。">
+          <rect class="box" x="462" y="60" width="380" height="250" rx="8" fill="#1B2333" stroke="#D4AF37" stroke-width="2"/>
+          <text x="492" y="118" fill="#D4AF37" font-size="26" font-weight="700">LINE 友だち追加</text>
+          <text x="492" y="176" fill="#F2F4F7" font-size="24">・メニューで仕事紹介</text>
+          <text x="492" y="220" fill="#F2F4F7" font-size="24">・募集要項・よくある質問</text>
+        </g>
+
+        <line class="flow-arrow" x1="850" y1="185" x2="874" y2="185" stroke="#D4AF37" stroke-width="2.5" marker-end="url(#ag0)"/>
+
+        <g class="node" tabindex="0" data-name="応募フォーム"
+           data-tip="LINEの中で開くフォームです。お名前や希望の職種などを入力していただきます。回答はエルメの管理画面に一覧で残り、担当者様へお知らせが届きます。">
+          <rect class="box" x="884" y="60" width="380" height="250" rx="8" fill="#1B2333" stroke="#D4AF37" stroke-width="2"/>
+          <text x="914" y="118" fill="#D4AF37" font-size="26" font-weight="700">応募フォーム</text>
+          <text x="914" y="176" fill="#F2F4F7" font-size="24">・お名前・希望の職種</text>
+          <text x="914" y="220" fill="#F2F4F7" font-size="24">・担当者様へお知らせ</text>
+        </g>
+
+        <line class="flow-arrow" x1="1272" y1="185" x2="1296" y2="185" stroke="#D4AF37" stroke-width="2.5" marker-end="url(#ag0)"/>
+
+        <g class="node" tabindex="0" data-name="面接予約"
+           data-tip="担当者様が決めた曜日・時間帯の中から、空いている枠を選んでいただきます。予約はGoogleカレンダーに入り、前日には自動でリマインドが届きます。">
+          <rect class="box" x="1306" y="60" width="380" height="250" rx="8" fill="#1B2333" stroke="#D4AF37" stroke-width="2"/>
+          <text x="1336" y="118" fill="#D4AF37" font-size="26" font-weight="700">面接予約</text>
+          <text x="1336" y="176" fill="#F2F4F7" font-size="24">・空いている枠を選ぶ</text>
+          <text x="1336" y="220" fill="#F2F4F7" font-size="24">・前日にリマインド</text>
+        </g>
+
+        <line class="flow-arrow" x1="1694" y1="185" x2="1718" y2="185" stroke="#D4AF37" stroke-width="2.5" marker-end="url(#ag0)"/>
+
+        <g class="node" tabindex="0" data-name="面接"
+           data-tip="オンライン面接は、予約確定のメッセージに、御社でお使いの面接用URLを載せてお送りします。録画面接は、LINEで質問をお送りし、応募者様がスマホで撮った動画をLINEで返信していただく形です（1本5分まで）。受け取り方は、ご購入後に当方の端末から御社のアカウントへ試しの動画を送って確かめてから本設定します。">
+          <rect class="box" x="1728" y="60" width="380" height="250" rx="8" fill="#1B2333" stroke="#D4AF37" stroke-width="2"/>
+          <text x="1758" y="118" fill="#D4AF37" font-size="26" font-weight="700">面接</text>
+          <text x="1758" y="176" fill="#F2F4F7" font-size="24">・オンライン面接</text>
+          <text x="1758" y="220" fill="#F2F4F7" font-size="24">・録画面接（動画を返信）</text>
+        </g>
+      </svg>
+    </div>
+    </div>
+
+    <div class="reading">
+      <h3>重要点の要約</h3>
+      <ul>
+        <li>応募者様は<b>LINEから出ずに</b>、応募から面接の予約まで進めます。</li>
+        <li>面接の予約とリマインドは<b>自動</b>です。担当者様は、届いたお知らせで応募内容と予約日時を確かめ、面接に進みます。</li>
+        <li>録画面接は<b>専用ツールを使わず</b>、LINEで動画を受け取る形にしています。<br>そのため、月額費用が増えません。</li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="ch3">
+    <h2><span class="step">&#9314;</span>今回お作りするもの</h2>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>含むもの</th><th>中身</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>&#9989; エルメの初期設定</td><td>御社で取得済みのLINE公式アカウントとエルメをつなぎます<br>（LINE公式アカウントを新しく作る必要はありません）</td></tr>
+          <tr><td>&#9989; LINEのメニュー</td><td>お仕事紹介・募集要項・応募する・面接を予約する・よくある質問・お問い合わせ<br>（メニューの画像1枚も当方で作ります）</td></tr>
+          <tr><td>&#9989; 応募フォーム</td><td>1つ。回答はエルメの管理画面に一覧で残ります</td></tr>
+          <tr><td>&#9989; 面接予約</td><td>空いている枠からの予約と、前日の自動リマインド<br>（エルメの面談予約の機能・Googleカレンダーと連携）</td></tr>
+          <tr><td>&#9989; オンライン面接のご案内</td><td>予約確定のメッセージに、御社でお使いの面接用URL（固定）を載せてお送りします</td></tr>
+          <tr><td>&#9989; 録画面接のご案内</td><td>質問を自動でお送りし、応募者様からLINEで動画（1本5分まで）を返信していただきます<br>（受け取り方は、当方の端末から御社のアカウントへ試しの動画を送って確かめてから本設定します。<br>受け取れない場合は、月額費用のかからない別の受け取り方をご提案します・追加費用なし）</td></tr>
+          <tr><td>&#9989; Instagram 採用アカウント</td><td>開設と初期設定（プロフィール・ハイライト・LINEへのリンク）<br>（ハイライトは、御社からいただいたお写真・動画を入れて形を作るところまで）</td></tr>
+          <tr><td>&#9989; 通しテストと手順書</td><td>担当者様のスマホで応募から予約まで一度通し、画像つきの手順書をお渡しします</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="reading caution">
+      <h3>含まないもの</h3>
+      <ul>
+        <li>Instagramの<b>開設後の投稿運用</b></li>
+        <li>お仕事紹介の<b>動画の撮影・編集</b>（御社で作成されるご予定のため）</li>
+        <li>広告の出稿・運用</li>
+        <li>納品後の継続的な運用・効果測定</li>
+        <li>エルメ・LINE公式アカウントの<b>月額費用</b>（御社で直接ご契約いただきます）</li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="ch4">
+    <h2><span class="step">&#9315;</span>ツールの月額費用の目安</h2>
+    <p class="src"><span class="lbl">出典</span><a href="https://lme.jp/">エルメ 公式サイト</a><a href="https://www.lycbiz.com/jp/service/line-official-account/plan/">LINE公式アカウント 料金プラン</a></p>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>始め方</th><th>組み合わせ</th><th>月額（税込）</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>まずは無料で</td><td>LINE公式アカウント コミュニケーションプラン（月200通まで）<br>＋ エルメ フリープラン（月1,000通まで）</td><td class="num">0円</td></tr>
+          <tr><td>LINEの通数が増えたら</td><td>LINE公式アカウント ライトプラン（月5,000通まで・5,500円）<br>＋ エルメ フリープラン（月1,000通まで）</td><td class="num">5,500円</td></tr>
+          <tr><td>エルメの通数も増えたら</td><td>LINE公式アカウント ライトプラン（月5,000通まで・5,500円）<br>＋ エルメ スタンダードプラン（通数の上限なし・10,780円）</td><td class="num">16,280円</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="reading">
+      <h3>重要点の要約</h3>
+      <ul>
+        <li>どちらの組み合わせでも、<b>ご予算の月2〜3万円に収まります</b>。</li>
+        <li>まずは無料で始め、<b>リマインドやお知らせなど、こちらから送るメッセージが月200通を超えそうになった時点</b>で切り替えるのがおすすめです。</li>
+        <li>ツールは、<b>Lステップと同じ種類で、月額を抑えられるエルメ</b>にしています（募集文にも挙がっていたツールです）。</li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="ch5">
+    <h2><span class="step">&#9316;</span>お見積りと進め方</h2>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>項目</th><th>内容</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>お見積り</td><td class="num"><b>78,000円（税込）</b></td></tr>
+          <tr><td>完成の目安</td><td>必要なご招待・ご回答がそろってから約2週間（ご希望の11月30日には十分間に合う見込みです）</td></tr>
+          <tr><td>保証</td><td>ご満足いただけなければ全額返金いたします</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="reading">
+      <h3>この順番で進めます</h3>
+      <ul>
+        <li><b>ご購入</b> — ココナラの見積り機能でお送りします。</li>
+        <li><b>内容の決定</b> — メニューの項目・面接の枠・録画面接の質問を、チャットで一緒に決めます。</li>
+        <li><b>構築</b> — LINE・エルメ・Instagramを設定します。</li>
+        <li><b>通しテスト</b> — 担当者様のスマホで、応募から予約まで一度通していただきます。</li>
+        <li><b>手直しと納品</b> — テストで気になった点を直し、手順書と一緒にお渡しします。</li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="ch6">
+    <h2><span class="step">&#9317;</span>ご購入後に確認させていただくこと</h2>
+
+    <div class="reading">
+      <h3>いまお決めいただく必要はありません</h3>
+      <ul>
+        <li>エルメの登録（無料）は、<b>御社のLINEで行っていただきます</b>（手順は当方からお送りします）</li>
+        <li>LINE公式アカウントとエルメの管理画面に、<b>当方を管理者として招待</b>していただくこと</li>
+        <li>オンライン面接で<b>お使いのWeb会議のURL</b></li>
+        <li>面接の担当者様と、<b>予約を受ける曜日・時間帯</b></li>
+        <li>録画面接でお聞きしたい質問（3問程度・当方から案もお出しします）</li>
+        <li>Instagramの開設に使う<b>メールアドレスまたは電話番号</b>（御社でご用意ください・開設時に届く確認コードを1回お伝えいただきます）</li>
+        <li>受け取った面接動画の<b>保存先</b>（担当者様のスマホ・共有フォルダなど）</li>
+      </ul>
+    </div>
+  </section>
+
+  <footer>
+    <span class="brand">AIフローアーキテクト</span>
+    <span>2026年9月13日 時点</span>
+  </footer>
+
+</div>
+
+<script>
+/* 3枚共通のホバー解説。ここが唯一の正本＝ページ側に個別スクリプトを書かない */
+(function(){
+  var tip = document.getElementById('tip');
+  var current = null;
+
+  function show(el){
+    var name = el.getAttribute('data-name') || '';
+    var body = el.getAttribute('data-tip') || '';
+    if(!body) return;
+    tip.innerHTML = '';
+    if(name){
+      var n = document.createElement('span');
+      n.className = 'tip-name';
+      n.textContent = name;
+      tip.appendChild(n);
+    }
+    tip.appendChild(document.createTextNode(body));
+    tip.classList.add('on');
+    position(el);
+    current = el;
+  }
+
+  function position(el){
+    var r = el.getBoundingClientRect();
+    var t = tip.getBoundingClientRect();
+    var pad = 12;
+    var left = r.left + r.width/2 - t.width/2;
+    left = Math.max(pad, Math.min(left, window.innerWidth - t.width - pad));
+    var top = r.top - t.height - pad;
+    if(top < pad) top = r.bottom + pad;
+    if(top + t.height > window.innerHeight - pad){
+      top = Math.max(pad, window.innerHeight - t.height - pad);
+    }
+    tip.style.left = left + 'px';
+    tip.style.top = top + 'px';
+  }
+
+  function hide(){ tip.classList.remove('on'); current = null; }
+
+  var nodes = document.querySelectorAll('.node');
+  for(var i=0;i<nodes.length;i++){
+    (function(el){
+      el.addEventListener('mouseenter', function(){ show(el); });
+      el.addEventListener('mouseleave', hide);
+      el.addEventListener('focus', function(){ show(el); });
+      el.addEventListener('blur', hide);
+      el.addEventListener('click', function(e){
+        e.stopPropagation();
+        if(current === el){ hide(); } else { show(el); }
+      });
+    })(nodes[i]);
+  }
+
+  document.addEventListener('click', hide);
+  window.addEventListener('scroll', function(){ if(current) position(current); }, {passive:true});
+  window.addEventListener('resize', function(){ if(current) position(current); });
+  document.addEventListener('keydown', function(e){ if(e.key === 'Escape') hide(); });
+})();
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/4.5.0/anime.umd.min.js"></script>
+<script data-accent>
+/* アクセントの動き（全体の約10%まで）。動かせない環境では何もしない＝最初から全部見えている */
+(function(){
+  if(!window.anime || !anime.animate || !anime.stagger) return;
+  if(!('IntersectionObserver' in window)) return;
+  if(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  var fig = document.querySelector('[data-accent="flow"]');
+  if(!fig) return;
+  var items = fig.querySelectorAll('.node, .flow-arrow');
+  if(!items.length) return;
+  var i;
+  for(i=0;i<items.length;i++){ items[i].style.opacity = '0'; }
+  function reveal(){ for(var k=0;k<items.length;k++){ items[k].style.opacity = '1'; } }
+  var io = new IntersectionObserver(function(entries){
+    for(var j=0;j<entries.length;j++){
+      if(!entries[j].isIntersecting) continue;
+      io.disconnect();
+      /* 途中で止まっても隠れたままにしない保険 */
+      setTimeout(reveal, 3000);
+      try{
+        anime.animate(items, {opacity:[0,1], translateX:[-14,0], delay:anime.stagger(160), duration:650, ease:'outQuad'});
+      }catch(e){ reveal(); }
+      return;
+    }
+  }, {threshold:0.3});
+  io.observe(fig);
+})();
+</script>
